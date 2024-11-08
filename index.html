@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机配对抽号</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(180deg, #87CEEB 0%, #B0E2FF 100%);
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cloud {
+            position: absolute;
+            background: white;
+            border-radius: 50px;
+            animation: float 20s infinite linear;
+            opacity: 0.8;
+            z-index: 0;
+        }
+
+        .cloud:before, .cloud:after {
+            content: '';
+            position: absolute;
+            background: white;
+            border-radius: 50%;
+        }
+
+        .cloud1 {
+            width: 100px;
+            height: 40px;
+            top: 10%;
+            left: -100px;
+        }
+
+        .cloud1:before {
+            width: 50px;
+            height: 50px;
+            top: -20px;
+            left: 15px;
+        }
+
+        .cloud1:after {
+            width: 40px;
+            height: 40px;
+            top: -15px;
+            left: 45px;
+        }
+
+        .cloud2 {
+            width: 80px;
+            height: 30px;
+            top: 30%;
+            left: -80px;
+            animation-delay: -5s;
+        }
+
+        .cloud2:before {
+            width: 40px;
+            height: 40px;
+            top: -15px;
+            left: 10px;
+        }
+
+        .cloud2:after {
+            width: 30px;
+            height: 30px;
+            top: -10px;
+            left: 35px;
+        }
+
+        @keyframes float {
+            from { left: -100px; }
+            to { left: 100%; }
+        }
+
+        .forest {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 200px;
+            background: linear-gradient(180deg, #228B22 0%, #006400 100%);
+            border-top: 2px solid #1a6b1a;
+            z-index: 1;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            backdrop-filter: blur(10px);
+            max-width: 500px;
+            width: 90%;
+            margin-top: 50px;
+            height: 460px; /* 固定容器高度 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin: 0 0 20px 0;
+            font-size: 28px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .result {
+            flex: 1;
+            margin: 10px 0;
+            font-size: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            min-height: 300px; /* 确保结果区域有足够空间显示4组 */
+        }
+
+        .button-group {
+            margin-top: auto;
+            padding: 20px 0;
+        }
+
+        button {
+            padding: 12px 30px;
+            font-size: 16px;
+            margin: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        }
+
+        button:disabled {
+            background: linear-gradient(135deg, #cccccc 0%, #bbbbbb 100%);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .pair {
+            margin: 10px 0;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+            font-size: 18px;
+            color: #34495e;
+        }
+
+        .pair:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.9);
+        }
+
+        .sun {
+            position: absolute;
+            top: 40px;
+            right: 40px;
+            width: 80px;
+            height: 80px;
+            background: #FFD700;
+            border-radius: 50%;
+            box-shadow: 0 0 50px #FFD700;
+            animation: glow 4s infinite alternate;
+            z-index: 0;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 50px #FFD700; }
+            to { box-shadow: 0 0 80px #FFD700; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sun"></div>
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    <div class="forest"></div>
+
+    <div class="container">
+        <h2>🌟 随机配对抽号 🌟</h2>
+        <div class="result" id="result"></div>
+        <div class="button-group">
+            <button id="drawBtn" onclick="draw()">✨ 抽取</button>
+            <button onclick="reset()">🔄 重启</button>
+        </div>
+    </div>
+
+    <script>
+        let numbers = [1, 2, 3, 4, 5, 6, 7, 8];
+        let availableNumbers = [...numbers];
+        let pairs = [];
+        let lastRoundPairs = [];
+        let isNewRound = true;
+
+        function draw() {
+            if (availableNumbers.length < 2) {
+                document.getElementById('drawBtn').disabled = true;
+                return;
+            }
+
+            if (isNewRound) {
+                let tempPairs = [];
+                let tempNumbers = [...numbers];
+                
+                while (tempNumbers.length > 0) {
+                    let index1 = Math.floor(Math.random() * tempNumbers.length);
+                    let num1 = tempNumbers[index1];
+                    tempNumbers.splice(index1, 1);
+
+                    let index2 = Math.floor(Math.random() * tempNumbers.length);
+                    let num2 = tempNumbers[index2];
+                    tempNumbers.splice(index2, 1);
+
+                    tempPairs.push([num1, num2]);
+                }
+
+                if (isPairingSame(tempPairs, lastRoundPairs)) {
+                    reset();
+                    return;
+                }
+                
+                isNewRound = false;
+            }
+
+            let index1 = Math.floor(Math.random() * availableNumbers.length);
+            let num1 = availableNumbers[index1];
+            availableNumbers.splice(index1, 1);
+
+            let index2 = Math.floor(Math.random() * availableNumbers.length);
+            let num2 = availableNumbers[index2];
+            availableNumbers.splice(index2, 1);
+
+            pairs.push([num1, num2]);
+            
+            displayResults();
+        }
+
+        function displayResults() {
+            let resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '';
+            
+            // 始终保持4个位置的空间
+            for (let i = 0; i < 4; i++) {
+                let pairDiv = document.createElement('div');
+                pairDiv.className = 'pair';
+                if (i < pairs.length) {
+                    pairDiv.textContent = `第${i + 1}组：${pairs[i][0]} - ${pairs[i][1]}`;
+                } else {
+                    pairDiv.innerHTML = '&nbsp;'; // 空白占位
+                }
+                resultDiv.appendChild(pairDiv);
+            }
+        }
+
+        function isPairingSame(newPairs, oldPairs) {
+            if (oldPairs.length === 0) return false;
+            for (let i = 0; i < newPairs.length; i++) {
+                let newPair = [...newPairs[i]].sort();
+                let oldPair = [...oldPairs[i]].sort();
+                if (newPair[0] !== oldPair[0] || newPair[1] !== oldPair[1]) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function reset() {
+            lastRoundPairs = [...pairs];
+            pairs = [];
+            availableNumbers = [...numbers];
+            document.getElementById('drawBtn').disabled = false;
+            isNewRound = true;
+            displayResults();
+        }
+
+        // 初始化显示空白占位符
+        displayResults();
+    </script>
+</body>
+</html>
